@@ -4,7 +4,7 @@
 
 ![StylePulse 架构总览：业务链路 → 限界上下文 → DDD 六层 → 技术底座](docs/assets/architecture-4x3.png)
 
-<p align="center"><sub>业务链路 → 限界上下文 → DDD 六层 → 技术底座；可交互版本见 <a href="docs/architecture.html">docs/architecture.html</a></sub></p>
+<p align="center"><sub>业务链路 → 限界上下文 → DDD 六层 → 技术底座；可交互版本：<code>docs/architecture.html</code>（本地浏览器打开）</sub></p>
 
 业务方案见 [docs/01-business-case.md](docs/01-business-case.md)，技术设计见 [docs/02-technical-design.md](docs/02-technical-design.md)，代码规范见 [AGENTS.md](AGENTS.md)，面试话术见 [docs/03-interview-playbook.md](docs/03-interview-playbook.md)。
 
@@ -105,7 +105,7 @@ redis-cli HGETALL "cap:1:1:$(date -v+7d +%Y-%m-%d)"
 
 ## 3. 架构总览
 
-整体视图见文首配图（[可交互版本](docs/architecture.html)），这一节只讲模块清单和一次调用的穿透路径。
+整体视图见文首配图（可交互版本：`docs/architecture.html`，本地浏览器打开），这一节只讲模块清单和一次调用的穿透路径。
 
 ### 3.1 模块职责（Maven 强制约束）
 

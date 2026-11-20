@@ -9,9 +9,9 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>reflow-bootstrap</artifactId>
-    <name>reflow-bootstrap</name>
-    <description>装配层：唯一的启动模块，负责组件扫描、数据源、H2/Redis 配置与集成测试</description>
+    <artifactId>reflow-start</artifactId>
+    <name>reflow-start</name>
+    <description>启动层：唯一的启动模块，负责组件扫描、数据源、H2/Redis 配置与集成测试</description>
 
     <dependencies>
         <dependency>

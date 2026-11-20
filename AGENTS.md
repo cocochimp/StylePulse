@@ -64,12 +64,12 @@
 | `reflow-application` | `/app/reflow-application` | 场景编排、Assembler、事务边界 | common、model、client、domain | infrastructure |
 | `reflow-infrastructure` | `/app/reflow-infrastructure` | 仓储实现（MyBatis-Plus / Redis / Lua / 位图） | common、model、domain | application、client |
 | `reflow-adaptor` | `/app/reflow-adaptor` | input（Controller/消费者/定时任务）+ output（工厂接口） | common、model、client、application | infrastructure |
-| `reflow-bootstrap` | `/reflow-bootstrap` | 唯一启动与装配模块 | 全部 | — |
+| `reflow-start` | `/reflow-start` | 唯一启动与装配模块 | 全部 | — |
 
 ### 2.2 目录约定（新建模块时必须照做）
 
 ```
-/pom.xml                    根聚合：只挂外围模块 + app + bootstrap
+/pom.xml                    根聚合：只挂外围模块 + app + start
 /app/pom.xml                DDD 四层的聚合模块（packaging=pom）
 /app/reflow-domain
 /app/reflow-application
@@ -78,15 +78,16 @@
 /reflow-common
 /reflow-model
 /reflow-client
-/reflow-bootstrap
+/reflow-start
 ```
 
 - **DDD 四层必须放 `app/` 下**：它们是"同一个可部署应用"的内部结构，集中放置才能一眼看出业务内核在哪。
-- **其他模块放第一层与 `app` 平级**：`common`（技术基座）、`model`（共享模型）、`client`（对外契约）、`bootstrap`（装配入口）都不属于应用内核。
+- **其他模块放第一层与 `app` 平级**：`common`（技术基座）、`model`（共享模型）、`client`（对外契约）、`start`（装配入口）都不属于应用内核。
 - `app/` 是 Maven 聚合模块，本身不写代码、不引依赖，只负责 `modules` 声明。
 - `app/` 下每个子模块的 `parent` 必须显式写 `<relativePath>../../pom.xml</relativePath>`，
   否则 Maven 默认的 `../pom.xml` 会解析到 `app/pom.xml`（artifactId 不匹配）而报错。
 - 新增上下文（如 `insight` 有独立部署需求）时，先加在 `domain` 包内；确有独立模块必要再提出来讨论，不要自行拆模块。
+- **启动模块固定命名 `reflow-start`，包名 `com.reflow.start`**：不用 `bootstrap`（易与 Spring Cloud 上下文混淆），也不用 `application`（与 DDD 应用层重名）。
 
 > `reflow-common` 是六层之外的**共享内核**：它只装"所有层都要用、且与业务无关"的东西。
 > 不要往里加业务枚举（那是 model 的事），也不要往里加工具类堆场。

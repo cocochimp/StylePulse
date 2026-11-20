@@ -42,7 +42,7 @@ redis-server --port 6379
 
 ```bash
 mvn clean package -DskipTests
-java -jar reflow-bootstrap/target/reflow-bootstrap-1.0.0-SNAPSHOT.jar
+java -jar reflow-start/target/reflow-start-1.0.0-SNAPSHOT.jar
 ```
 
 > 如果你的 `~/.m2/settings.xml` 配了 http 镜像，Maven 3.9 会以 `Blocked mirror` 拒绝。
@@ -116,7 +116,7 @@ flowchart TD
     M --> I
     CL --> AD[reflow-adaptor<br/>入口/出口适配]
     A --> AD
-    A --> B[reflow-bootstrap<br/>装配与启动]
+    A --> B[reflow-start<br/>装配与启动]
     I --> B
     AD --> B
 ```
@@ -130,10 +130,10 @@ flowchart TD
 | `reflow-application` | `/app/reflow-application` | 场景编排、Assembler、事务边界。实现 client 的接口 | common、model、client、domain |
 | `reflow-infrastructure` | `/app/reflow-infrastructure` | 仓储实现：MyBatis-Plus / Redis / Lua / RoaringBitmap | common、model、domain |
 | `reflow-adaptor` | `/app/reflow-adaptor` | input（Controller、MQ 消费者、定时任务）+ output（工厂接口） | common、model、client、application |
-| `reflow-bootstrap` | `/reflow-bootstrap` | 唯一启动模块，负责组件扫描与配置 | 全部 |
+| `reflow-start` | `/reflow-start` | 唯一启动模块，负责组件扫描与配置 | 全部 |
 
 **为什么这么分目录**：DDD 四层是"同一个可部署应用"的内部结构，放 `app/` 下集中表达；
-`common` / `model` / `client` / `bootstrap` 是应用之外的东西（技术基座、对外契约、装配入口），
+`common` / `model` / `client` / `start` 是应用之外的东西（技术基座、对外契约、装配入口），
 留在第一层与 `app/` 平级。目录结构本身就在回答"哪些是业务内核、哪些是外围设施"。
 
 > 规则不是靠"自觉遵守"，而是靠 Maven 依赖图：`domain` 里根本拿不到 `RedisTemplate`，因为 pom 里没有。

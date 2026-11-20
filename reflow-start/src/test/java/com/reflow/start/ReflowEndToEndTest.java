@@ -1,4 +1,4 @@
-package com.reflow.bootstrap;
+package com.reflow.start;
 
 import com.reflow.client.capacity.CapacityAppService;
 import com.reflow.client.capacity.req.ReserveCapacityRequestDTO;

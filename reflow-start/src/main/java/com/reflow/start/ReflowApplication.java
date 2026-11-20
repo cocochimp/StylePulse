@@ -1,4 +1,4 @@
-package com.reflow.bootstrap;
+package com.reflow.start;
 
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;

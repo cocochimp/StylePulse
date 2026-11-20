@@ -1,5 +1,7 @@
 # Reflow · SHEIN 供货商侧「返单决策中台」业务方案
 
+> 配套：[技术方案](02-technical-design.md) · [面试 Playbook](03-interview-playbook.md) · [DDD 规范](../AGENTS.md)
+
 > 一句话：**在返单窗口关闭之前，把「追不追、追多少、追到哪个尺码、哪个工厂产得出来」这四个判断从人脑搬到系统里。**
 
 | 项 | 内容 |

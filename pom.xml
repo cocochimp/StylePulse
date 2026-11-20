@@ -4,35 +4,35 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.reflow</groupId>
-    <artifactId>reflow</artifactId>
+    <groupId>com.stylepulse</groupId>
+    <artifactId>stylepulse</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>reflow</name>
+    <name>stylepulse</name>
     <description>SHEIN 供货商侧返单决策中台：DDD 六层架构演示工程</description>
 
     <!--
         目录结构与模块职责：
-          reflow-common   -> 技术基座（ResultDO / Base* / 异常 / 锁接口），六层之外的共享内核
-          reflow-model    -> 跨上下文共享的业务枚举与通用概念
-          reflow-client   -> 对外契约（DTO + AppService 接口）
+          stylepulse-common   -> 技术基座（ResultDO / Base* / 异常 / 锁接口），六层之外的共享内核
+          stylepulse-model    -> 跨上下文共享的业务枚举与通用概念
+          stylepulse-client   -> 对外契约（DTO + AppService 接口）
           app/            -> DDD 四层，同属一个可部署应用
-            reflow-domain         -> 领域层（聚合根/实体/值对象/领域服务/仓储接口），零技术依赖
-            reflow-application    -> 场景编排，实现 client 契约
-            reflow-infrastructure -> 仓储实现（MySQL/Redis/Lua/位图）
-            reflow-adaptor        -> 入口（Controller/消费者/定时任务）与出口（工厂接口）
-          reflow-start    -> 唯一的 Spring Boot 启动模块，也是唯一做组件扫描与装配的地方
+            stylepulse-domain         -> 领域层（聚合根/实体/值对象/领域服务/仓储接口），零技术依赖
+            stylepulse-application    -> 场景编排，实现 client 契约
+            stylepulse-infrastructure -> 仓储实现（MySQL/Redis/Lua/位图）
+            stylepulse-adaptor        -> 入口（Controller/消费者/定时任务）与出口（工厂接口）
+          stylepulse-start    -> 唯一的 Spring Boot 启动模块，也是唯一做组件扫描与装配的地方
     -->
     <modules>
         <!-- 外围：技术基座 / 共享模型 / 对外契约 -->
-        <module>reflow-common</module>
-        <module>reflow-model</module>
-        <module>reflow-client</module>
+        <module>stylepulse-common</module>
+        <module>stylepulse-model</module>
+        <module>stylepulse-client</module>
         <!-- 核心：DDD 四层收在 app/ 下，见 app/pom.xml -->
         <module>app</module>
         <!-- 装配：唯一启动模块 -->
-        <module>reflow-start</module>
+        <module>stylepulse-start</module>
     </modules>
 
     <properties>
@@ -58,38 +58,38 @@
 
             <!-- 内部模块统一版本，子模块引用时无需再写 version -->
             <dependency>
-                <groupId>com.reflow</groupId>
-                <artifactId>reflow-common</artifactId>
+                <groupId>com.stylepulse</groupId>
+                <artifactId>stylepulse-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.reflow</groupId>
-                <artifactId>reflow-model</artifactId>
+                <groupId>com.stylepulse</groupId>
+                <artifactId>stylepulse-model</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.reflow</groupId>
-                <artifactId>reflow-client</artifactId>
+                <groupId>com.stylepulse</groupId>
+                <artifactId>stylepulse-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.reflow</groupId>
-                <artifactId>reflow-domain</artifactId>
+                <groupId>com.stylepulse</groupId>
+                <artifactId>stylepulse-domain</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.reflow</groupId>
-                <artifactId>reflow-application</artifactId>
+                <groupId>com.stylepulse</groupId>
+                <artifactId>stylepulse-application</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.reflow</groupId>
-                <artifactId>reflow-infrastructure</artifactId>
+                <groupId>com.stylepulse</groupId>
+                <artifactId>stylepulse-infrastructure</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.reflow</groupId>
-                <artifactId>reflow-adaptor</artifactId>
+                <groupId>com.stylepulse</groupId>
+                <artifactId>stylepulse-adaptor</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

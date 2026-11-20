@@ -1,4 +1,4 @@
-# AGENTS.md — Reflow 项目开发规范
+# AGENTS.md — StylePulse 项目开发规范
 
 > 本文件是**项目级硬约束**，对本仓库所有代码生成、修改、评审生效。
 > 全局约定（简体中文回复、先问再做、提交格式 `feat: xxx`）见 `~/.dsh/AGENTS.md`，本文件只补项目专属规则。
@@ -8,7 +8,7 @@
 
 ## 1. 项目定位与边界
 
-**Reflow = SHEIN 供货商侧的返单决策中台。** 只做返单决策链：诊断 → 规则命中 → 追单量 → 拆量 → 产能预占 → 复盘。
+**StylePulse = SHEIN 供货商侧的返单决策中台。** 只做返单决策链：诊断 → 规则命中 → 追单量 → 拆量 → 产能预占 → 复盘。
 
 ### 1.1 明确不做（禁止擅自扩展）
 
@@ -57,28 +57,28 @@
 
 | 模块 | 目录 | 职责 | 允许依赖 | 禁止依赖 |
 |---|---|---|---|---|
-| `reflow-common` | `/reflow-common` | 技术基座：`ResultDO`、`Base*`、异常、`LevelLock`、`Field`。**不含任何业务概念** | 无 | 全部 |
-| `reflow-model` | `/reflow-model` | 跨上下文共享的业务枚举与常量 | common | 其他 |
-| `reflow-client` | `/reflow-client` | DTO + AppService 接口 | common | model / domain / application |
-| `reflow-domain` | `/app/reflow-domain` | 聚合根、实体、值对象、Param、Result、DomainService、Repository 接口 | common、model | 其他 |
-| `reflow-application` | `/app/reflow-application` | 场景编排、Assembler、事务边界 | common、model、client、domain | infrastructure |
-| `reflow-infrastructure` | `/app/reflow-infrastructure` | 仓储实现（MyBatis-Plus / Redis / Lua / 位图） | common、model、domain | application、client |
-| `reflow-adaptor` | `/app/reflow-adaptor` | input（Controller/消费者/定时任务）+ output（工厂接口） | common、model、client、application | infrastructure |
-| `reflow-start` | `/reflow-start` | 唯一启动与装配模块 | 全部 | — |
+| `stylepulse-common` | `/stylepulse-common` | 技术基座：`ResultDO`、`Base*`、异常、`LevelLock`、`Field`。**不含任何业务概念** | 无 | 全部 |
+| `stylepulse-model` | `/stylepulse-model` | 跨上下文共享的业务枚举与常量 | common | 其他 |
+| `stylepulse-client` | `/stylepulse-client` | DTO + AppService 接口 | common | model / domain / application |
+| `stylepulse-domain` | `/app/stylepulse-domain` | 聚合根、实体、值对象、Param、Result、DomainService、Repository 接口 | common、model | 其他 |
+| `stylepulse-application` | `/app/stylepulse-application` | 场景编排、Assembler、事务边界 | common、model、client、domain | infrastructure |
+| `stylepulse-infrastructure` | `/app/stylepulse-infrastructure` | 仓储实现（MyBatis-Plus / Redis / Lua / 位图） | common、model、domain | application、client |
+| `stylepulse-adaptor` | `/app/stylepulse-adaptor` | input（Controller/消费者/定时任务）+ output（工厂接口） | common、model、client、application | infrastructure |
+| `stylepulse-start` | `/stylepulse-start` | 唯一启动与装配模块 | 全部 | — |
 
 ### 2.2 目录约定（新建模块时必须照做）
 
 ```
 /pom.xml                    根聚合：只挂外围模块 + app + start
 /app/pom.xml                DDD 四层的聚合模块（packaging=pom）
-/app/reflow-domain
-/app/reflow-application
-/app/reflow-infrastructure
-/app/reflow-adaptor
-/reflow-common
-/reflow-model
-/reflow-client
-/reflow-start
+/app/stylepulse-domain
+/app/stylepulse-application
+/app/stylepulse-infrastructure
+/app/stylepulse-adaptor
+/stylepulse-common
+/stylepulse-model
+/stylepulse-client
+/stylepulse-start
 ```
 
 - **DDD 四层必须放 `app/` 下**：它们是"同一个可部署应用"的内部结构，集中放置才能一眼看出业务内核在哪。
@@ -87,9 +87,9 @@
 - `app/` 下每个子模块的 `parent` 必须显式写 `<relativePath>../../pom.xml</relativePath>`，
   否则 Maven 默认的 `../pom.xml` 会解析到 `app/pom.xml`（artifactId 不匹配）而报错。
 - 新增上下文（如 `insight` 有独立部署需求）时，先加在 `domain` 包内；确有独立模块必要再提出来讨论，不要自行拆模块。
-- **启动模块固定命名 `reflow-start`，包名 `com.reflow.start`**：不用 `bootstrap`（易与 Spring Cloud 上下文混淆），也不用 `application`（与 DDD 应用层重名）。
+- **启动模块固定命名 `stylepulse-start`，包名 `com.stylepulse.start`**：不用 `bootstrap`（易与 Spring Cloud 上下文混淆），也不用 `application`（与 DDD 应用层重名）。
 
-> `reflow-common` 是六层之外的**共享内核**：它只装"所有层都要用、且与业务无关"的东西。
+> `stylepulse-common` 是六层之外的**共享内核**：它只装"所有层都要用、且与业务无关"的东西。
 > 不要往里加业务枚举（那是 model 的事），也不要往里加工具类堆场。
 
 ---
@@ -133,7 +133,7 @@ infrastructure ── 实现 domain 的 repository 接口
 ## 4. 包结构模板
 
 ```
-com.reflow
+com.stylepulse
 ├── common/                     # 技术基座：result / base / exception / lock / field
 ├── domain/
 │   ├── style/

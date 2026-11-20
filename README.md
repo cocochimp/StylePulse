@@ -1,4 +1,4 @@
-# Reflow · SHEIN 供货商侧返单决策中台
+# StylePulse · SHEIN 供货商侧返单决策中台
 
 > 一个**按 DDD 六层架构落地的完整 Java 工程**：从销量事件进来，到生产指令下发给工厂，中间四个技术难点（倒排索引、滑动窗口、三层幂等、Lua 原子预占）全部有可运行代码和测试。
 
@@ -16,11 +16,11 @@ SHEIN 用"小单快反"供货：新品首单 100–200 件测款，卖得好要�
 
 | 痛点 | 代码里的解法 | 看哪里 |
 |---|---|---|
-| 款多到看不完，逐款遍历算不动 | 规则倒排索引 + RoaringBitmap 交集 | [ReplenishRuleIndex](app/reflow-infrastructure/src/main/java/com/reflow/infrastructure/replenish/index/ReplenishRuleIndex.java) |
-| 销量事件重复、乱序，窗口算不准 | 5 分钟分桶 + eventId 去重 + eventTime 水位线 | [SalesWatermarkDomainServiceImpl](app/reflow-domain/src/main/java/com/reflow/domain/metric/service/SalesWatermarkDomainServiceImpl.java) |
-| 巡检/事件/人工三路并发，重复追单 | 分布式锁 → 状态机 CAS → 唯一键 | [ReplenishDomainServiceImpl](app/reflow-domain/src/main/java/com/reflow/domain/replenish/service/ReplenishDomainServiceImpl.java) |
-| 多个爆款抢同一产线，Excel 排产必超占 | Redis Lua 原子预占 + 三态 + 看板对账 | [CapacityRepositoryImpl](app/reflow-infrastructure/src/main/java/com/reflow/infrastructure/capacity/repository/CapacityRepositoryImpl.java) |
-| 追单总量拆到尺码后，总额对不上 | 最大余额法 + MOQ 收敛 | [SizeAllocationDomainServiceImpl](app/reflow-domain/src/main/java/com/reflow/domain/replenish/service/SizeAllocationDomainServiceImpl.java) |
+| 款多到看不完，逐款遍历算不动 | 规则倒排索引 + RoaringBitmap 交集 | [ReplenishRuleIndex](app/stylepulse-infrastructure/src/main/java/com/stylepulse/infrastructure/replenish/index/ReplenishRuleIndex.java) |
+| 销量事件重复、乱序，窗口算不准 | 5 分钟分桶 + eventId 去重 + eventTime 水位线 | [SalesWatermarkDomainServiceImpl](app/stylepulse-domain/src/main/java/com/stylepulse/domain/metric/service/SalesWatermarkDomainServiceImpl.java) |
+| 巡检/事件/人工三路并发，重复追单 | 分布式锁 → 状态机 CAS → 唯一键 | [ReplenishDomainServiceImpl](app/stylepulse-domain/src/main/java/com/stylepulse/domain/replenish/service/ReplenishDomainServiceImpl.java) |
+| 多个爆款抢同一产线，Excel 排产必超占 | Redis Lua 原子预占 + 三态 + 看板对账 | [CapacityRepositoryImpl](app/stylepulse-infrastructure/src/main/java/com/stylepulse/infrastructure/capacity/repository/CapacityRepositoryImpl.java) |
+| 追单总量拆到尺码后，总额对不上 | 最大余额法 + MOQ 收敛 | [SizeAllocationDomainServiceImpl](app/stylepulse-domain/src/main/java/com/stylepulse/domain/replenish/service/SizeAllocationDomainServiceImpl.java) |
 
 ---
 
@@ -42,7 +42,7 @@ redis-server --port 6379
 
 ```bash
 mvn clean package -DskipTests
-java -jar reflow-start/target/reflow-start-1.0.0-SNAPSHOT.jar
+java -jar stylepulse-start/target/stylepulse-start-1.0.0-SNAPSHOT.jar
 ```
 
 > 如果你的 `~/.m2/settings.xml` 配了 http 镜像，Maven 3.9 会以 `Blocked mirror` 拒绝。
@@ -105,32 +105,32 @@ redis-cli HGETALL "cap:1:1:$(date -v+7d +%Y-%m-%d)"
 
 ```mermaid
 flowchart TD
-    C[reflow-common<br/>技术基座] --> M[reflow-model<br/>共享枚举]
-    C --> CL[reflow-client<br/>对外契约]
-    M --> D[reflow-domain<br/>领域层]
+    C[stylepulse-common<br/>技术基座] --> M[stylepulse-model<br/>共享枚举]
+    C --> CL[stylepulse-client<br/>对外契约]
+    M --> D[stylepulse-domain<br/>领域层]
     C --> D
-    CL --> A[reflow-application<br/>场景编排]
+    CL --> A[stylepulse-application<br/>场景编排]
     D --> A
     M --> A
-    D --> I[reflow-infrastructure<br/>仓储实现]
+    D --> I[stylepulse-infrastructure<br/>仓储实现]
     M --> I
-    CL --> AD[reflow-adaptor<br/>入口/出口适配]
+    CL --> AD[stylepulse-adaptor<br/>入口/出口适配]
     A --> AD
-    A --> B[reflow-start<br/>装配与启动]
+    A --> B[stylepulse-start<br/>装配与启动]
     I --> B
     AD --> B
 ```
 
 | 模块 | 目录 | 职责 | 允许依赖 |
 |---|---|---|---|
-| `reflow-common` | `/reflow-common` | `ResultDO` / `Base*` / 异常 / 锁接口。六层之外的共享内核，**不含业务概念** | 无 |
-| `reflow-model` | `/reflow-model` | 跨上下文共享的业务枚举与常量 | common |
-| `reflow-client` | `/reflow-client` | RequestDTO / ResponseDTO / AppService 接口。**禁止依赖 model**（否则依赖扩散到外部系统） | common |
-| `reflow-domain` | `/app/reflow-domain` | 聚合根、实体、值对象、Param、Result、DomainService、Repository 接口。**零技术依赖** | common、model |
-| `reflow-application` | `/app/reflow-application` | 场景编排、Assembler、事务边界。实现 client 的接口 | common、model、client、domain |
-| `reflow-infrastructure` | `/app/reflow-infrastructure` | 仓储实现：MyBatis-Plus / Redis / Lua / RoaringBitmap | common、model、domain |
-| `reflow-adaptor` | `/app/reflow-adaptor` | input（Controller、MQ 消费者、定时任务）+ output（工厂接口） | common、model、client、application |
-| `reflow-start` | `/reflow-start` | 唯一启动模块，负责组件扫描与配置 | 全部 |
+| `stylepulse-common` | `/stylepulse-common` | `ResultDO` / `Base*` / 异常 / 锁接口。六层之外的共享内核，**不含业务概念** | 无 |
+| `stylepulse-model` | `/stylepulse-model` | 跨上下文共享的业务枚举与常量 | common |
+| `stylepulse-client` | `/stylepulse-client` | RequestDTO / ResponseDTO / AppService 接口。**禁止依赖 model**（否则依赖扩散到外部系统） | common |
+| `stylepulse-domain` | `/app/stylepulse-domain` | 聚合根、实体、值对象、Param、Result、DomainService、Repository 接口。**零技术依赖** | common、model |
+| `stylepulse-application` | `/app/stylepulse-application` | 场景编排、Assembler、事务边界。实现 client 的接口 | common、model、client、domain |
+| `stylepulse-infrastructure` | `/app/stylepulse-infrastructure` | 仓储实现：MyBatis-Plus / Redis / Lua / RoaringBitmap | common、model、domain |
+| `stylepulse-adaptor` | `/app/stylepulse-adaptor` | input（Controller、MQ 消费者、定时任务）+ output（工厂接口） | common、model、client、application |
+| `stylepulse-start` | `/stylepulse-start` | 唯一启动模块，负责组件扫描与配置 | 全部 |
 
 **为什么这么分目录**：DDD 四层是"同一个可部署应用"的内部结构，放 `app/` 下集中表达；
 `common` / `model` / `client` / `start` 是应用之外的东西（技术基座、对外契约、装配入口），
@@ -168,10 +168,10 @@ POST /api/replenish/decisions
 
 | # | 难点 | 主实现 | 关键设计 |
 |---|---|---|---|
-| **T1** | 规则命中不扫表 | [ReplenishRuleIndex](app/reflow-infrastructure/src/main/java/com/reflow/infrastructure/replenish/index/ReplenishRuleIndex.java) | 属性→规则的位图倒排，多维度 AND 交集粗筛；区间条件先桶化再精算。**桶化会多召回，但绝不漏** |
-| **T2** | 滚动窗口水位 | [SalesWatermarkRepositoryImpl](app/reflow-infrastructure/src/main/java/com/reflow/infrastructure/metric/repository/SalesWatermarkRepositoryImpl.java) | `HASH` 存桶计数 + `ZSET` 定位窗口；`SETNX evt:{id}` 去重、`lastEventTime` 水位线治乱序。**先推水位再加计数**，宁可少算不多算 |
-| **T3** | 重复追单幂等 | [ReplenishDomainServiceImpl](app/reflow-domain/src/main/java/com/reflow/domain/replenish/service/ReplenishDomainServiceImpl.java) + [ReplenishDecisionRepositoryImpl](app/reflow-infrastructure/src/main/java/com/reflow/infrastructure/replenish/repository/ReplenishDecisionRepositoryImpl.java) | 三层：分布式锁挡并发 / 状态机 CAS 挡非法流转 / `uk_style_round` 挡实现 bug |
-| **T4** | 产能原子预占 | [CapacityRepositoryImpl](app/reflow-infrastructure/src/main/java/com/reflow/infrastructure/capacity/repository/CapacityRepositoryImpl.java) + [capacity_reserve.lua](app/reflow-infrastructure/src/main/resources/lua/capacity_reserve.lua) | Redis 当闸门、DB 当账本；Lua 内"读-判-写"原子；三态 + 超时回收 + 缓存未命中从 DB 重建 |
+| **T1** | 规则命中不扫表 | [ReplenishRuleIndex](app/stylepulse-infrastructure/src/main/java/com/stylepulse/infrastructure/replenish/index/ReplenishRuleIndex.java) | 属性→规则的位图倒排，多维度 AND 交集粗筛；区间条件先桶化再精算。**桶化会多召回，但绝不漏** |
+| **T2** | 滚动窗口水位 | [SalesWatermarkRepositoryImpl](app/stylepulse-infrastructure/src/main/java/com/stylepulse/infrastructure/metric/repository/SalesWatermarkRepositoryImpl.java) | `HASH` 存桶计数 + `ZSET` 定位窗口；`SETNX evt:{id}` 去重、`lastEventTime` 水位线治乱序。**先推水位再加计数**，宁可少算不多算 |
+| **T3** | 重复追单幂等 | [ReplenishDomainServiceImpl](app/stylepulse-domain/src/main/java/com/stylepulse/domain/replenish/service/ReplenishDomainServiceImpl.java) + [ReplenishDecisionRepositoryImpl](app/stylepulse-infrastructure/src/main/java/com/stylepulse/infrastructure/replenish/repository/ReplenishDecisionRepositoryImpl.java) | 三层：分布式锁挡并发 / 状态机 CAS 挡非法流转 / `uk_style_round` 挡实现 bug |
+| **T4** | 产能原子预占 | [CapacityRepositoryImpl](app/stylepulse-infrastructure/src/main/java/com/stylepulse/infrastructure/capacity/repository/CapacityRepositoryImpl.java) + [capacity_reserve.lua](app/stylepulse-infrastructure/src/main/resources/lua/capacity_reserve.lua) | Redis 当闸门、DB 当账本；Lua 内"读-判-写"原子；三态 + 超时回收 + 缓存未命中从 DB 重建 |
 
 ### 4.1 三个"为什么不用 X"
 
@@ -201,15 +201,15 @@ POST /api/replenish/decisions
 按这个顺序读，大约 40 分钟能读完主干：
 
 1. [AGENTS.md](AGENTS.md) —— 先建立"什么代码该放哪"的地图
-2. `reflow-common/.../ResultDO.java` —— 全系统的返回口径
-3. `app/reflow-domain/.../style/model/aggregate/StyleAggregate.java` —— 看聚合根如何守住状态机
-4. `app/reflow-domain/.../replenish/model/entity/ReplenishRuleEntity.java` —— 看"规则+计算"怎么做到无副作用
-5. `app/reflow-domain/.../replenish/service/SizeAllocationDomainServiceImpl.java` —— 看最大余额法怎么保证守恒
-6. `app/reflow-infrastructure/.../replenish/index/ReplenishRuleIndex.java` —— T1
-7. `app/reflow-infrastructure/.../metric/repository/SalesWatermarkRepositoryImpl.java` —— T2
-8. `app/reflow-infrastructure/.../capacity/repository/CapacityRepositoryImpl.java` + Lua —— T4
-9. `app/reflow-domain/.../replenish/service/ReplenishDomainServiceImpl.java` —— T3 三层幂等
-10. `app/reflow-application/.../replenish/scenario/ReplenishDecisionAppServiceImpl.java` —— 看编排长什么样
+2. `stylepulse-common/.../ResultDO.java` —— 全系统的返回口径
+3. `app/stylepulse-domain/.../style/model/aggregate/StyleAggregate.java` —— 看聚合根如何守住状态机
+4. `app/stylepulse-domain/.../replenish/model/entity/ReplenishRuleEntity.java` —— 看"规则+计算"怎么做到无副作用
+5. `app/stylepulse-domain/.../replenish/service/SizeAllocationDomainServiceImpl.java` —— 看最大余额法怎么保证守恒
+6. `app/stylepulse-infrastructure/.../replenish/index/ReplenishRuleIndex.java` —— T1
+7. `app/stylepulse-infrastructure/.../metric/repository/SalesWatermarkRepositoryImpl.java` —— T2
+8. `app/stylepulse-infrastructure/.../capacity/repository/CapacityRepositoryImpl.java` + Lua —— T4
+9. `app/stylepulse-domain/.../replenish/service/ReplenishDomainServiceImpl.java` —— T3 三层幂等
+10. `app/stylepulse-application/.../replenish/scenario/ReplenishDecisionAppServiceImpl.java` —— 看编排长什么样
 
 ---
 
@@ -226,7 +226,7 @@ mvn test        # 30 个用例：23 个领域单测 + 5 个索引单测 + 2 个�
 | `StyleAggregateTest` | 合法/非法状态流转、终态保护 |
 | `ReplenishDecisionAggregateTest` | 数量守恒不变量、影子单不可下发、版本递增 |
 | `ReplenishRuleIndexTest` | 索引不漏、桶化多召回、停用规则不进索引 |
-| `ReflowEndToEndTest` | 全链路 + 10 路并发预占恰好 8 成功（需本机 Redis，没有则自动跳过） |
+| `StylePulseEndToEndTest` | 全链路 + 10 路并发预占恰好 8 成功（需本机 Redis，没有则自动跳过） |
 
 ---
 

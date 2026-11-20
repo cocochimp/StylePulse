@@ -1,4 +1,4 @@
-# Reflow 面试 Playbook
+# StylePulse 面试 Playbook
 
 > 配套：[业务方案](01-business-case.md) · [技术方案](02-technical-design.md) · [DDD 规范](../AGENTS.md)
 

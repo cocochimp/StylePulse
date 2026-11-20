@@ -1,4 +1,4 @@
-# Reflow · SHEIN 供货商侧「返单决策中台」业务方案
+# StylePulse · SHEIN 供货商侧「返单决策中台」业务方案
 
 > 配套：[技术方案](02-technical-design.md) · [面试 Playbook](03-interview-playbook.md) · [DDD 规范](../AGENTS.md)
 

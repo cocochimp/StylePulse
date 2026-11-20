@@ -1,0 +1,49 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: stylepulse
+  # 演示用内存库：启动即建表灌数据，方便直接跑通链路。
+  # 生产环境换成 MySQL 8 + 真实连接池即可，代码零改动（换的是配置，不是架构）
+  datasource:
+    url: jdbc:h2:mem:stylepulse;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/data.sql
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+
+mybatis-plus:
+  configuration:
+    # 下划线列名 → 驼峰属性，省掉大量 @TableField
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+
+logging:
+  level:
+    com.stylepulse: INFO
+    com.stylepulse.infrastructure.replenish.index: INFO
+
+stylepulse:
+  lock:
+    # 锁的保险丝：必须大于一次业务方法的正常耗时
+    ttl-millis: 10000
+  dispatch:
+    retry-interval-millis: 30000
+  factory:
+    # 置为 false 可演练"下发失败 → 本地消息重试"的完整补偿链路
+    mock-success: true

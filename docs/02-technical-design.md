@@ -1,4 +1,4 @@
-# Reflow 技术方案
+# StylePulse 技术方案
 
 > 配套文档：[业务方案](01-business-case.md) · [DDD 规范](../AGENTS.md) · [面试playbook](03-interview-playbook.md)
 

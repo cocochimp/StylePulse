@@ -55,16 +55,38 @@
 
 ### 2.1 模块清单（Maven 多模块，依赖由 pom 强制）
 
-| 模块 | 职责 | 允许依赖 | 禁止依赖 |
-|---|---|---|---|
-| `reflow-common` | 技术基座：`ResultDO`、`Base*`、异常、`LevelLock`、`Field`。**不含任何业务概念** | 无 | 全部 |
-| `reflow-model` | 跨上下文共享的业务枚举与常量 | common | 其他 |
-| `reflow-client` | DTO + AppService 接口 | common | model / domain / application |
-| `reflow-domain` | 聚合根、实体、值对象、Param、Result、DomainService、Repository 接口 | common、model | 其他 |
-| `reflow-application` | 场景编排、Assembler、事务边界 | common、model、client、domain | infrastructure |
-| `reflow-infrastructure` | 仓储实现（MyBatis-Plus / Redis / Lua / 位图） | common、model、domain | application、client |
-| `reflow-adaptor` | input（Controller/消费者/定时任务）+ output（工厂接口） | common、model、client、application | infrastructure |
-| `reflow-bootstrap` | 唯一启动与装配模块 | 全部 | — |
+| 模块 | 目录 | 职责 | 允许依赖 | 禁止依赖 |
+|---|---|---|---|---|
+| `reflow-common` | `/reflow-common` | 技术基座：`ResultDO`、`Base*`、异常、`LevelLock`、`Field`。**不含任何业务概念** | 无 | 全部 |
+| `reflow-model` | `/reflow-model` | 跨上下文共享的业务枚举与常量 | common | 其他 |
+| `reflow-client` | `/reflow-client` | DTO + AppService 接口 | common | model / domain / application |
+| `reflow-domain` | `/app/reflow-domain` | 聚合根、实体、值对象、Param、Result、DomainService、Repository 接口 | common、model | 其他 |
+| `reflow-application` | `/app/reflow-application` | 场景编排、Assembler、事务边界 | common、model、client、domain | infrastructure |
+| `reflow-infrastructure` | `/app/reflow-infrastructure` | 仓储实现（MyBatis-Plus / Redis / Lua / 位图） | common、model、domain | application、client |
+| `reflow-adaptor` | `/app/reflow-adaptor` | input（Controller/消费者/定时任务）+ output（工厂接口） | common、model、client、application | infrastructure |
+| `reflow-bootstrap` | `/reflow-bootstrap` | 唯一启动与装配模块 | 全部 | — |
+
+### 2.2 目录约定（新建模块时必须照做）
+
+```
+/pom.xml                    根聚合：只挂外围模块 + app + bootstrap
+/app/pom.xml                DDD 四层的聚合模块（packaging=pom）
+/app/reflow-domain
+/app/reflow-application
+/app/reflow-infrastructure
+/app/reflow-adaptor
+/reflow-common
+/reflow-model
+/reflow-client
+/reflow-bootstrap
+```
+
+- **DDD 四层必须放 `app/` 下**：它们是"同一个可部署应用"的内部结构，集中放置才能一眼看出业务内核在哪。
+- **其他模块放第一层与 `app` 平级**：`common`（技术基座）、`model`（共享模型）、`client`（对外契约）、`bootstrap`（装配入口）都不属于应用内核。
+- `app/` 是 Maven 聚合模块，本身不写代码、不引依赖，只负责 `modules` 声明。
+- `app/` 下每个子模块的 `parent` 必须显式写 `<relativePath>../../pom.xml</relativePath>`，
+  否则 Maven 默认的 `../pom.xml` 会解析到 `app/pom.xml`（artifactId 不匹配）而报错。
+- 新增上下文（如 `insight` 有独立部署需求）时，先加在 `domain` 包内；确有独立模块必要再提出来讨论，不要自行拆模块。
 
 > `reflow-common` 是六层之外的**共享内核**：它只装"所有层都要用、且与业务无关"的东西。
 > 不要往里加业务枚举（那是 model 的事），也不要往里加工具类堆场。

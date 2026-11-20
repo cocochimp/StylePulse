@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.reflow</groupId>
+    <artifactId>reflow</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>reflow</name>
+    <description>SHEIN 供货商侧返单决策中台：DDD 六层架构演示工程</description>
+
+    <!--
+        模块顺序即依赖顺序：越靠上越稳定、越靠内。
+        common  -> 技术基座（六层之外的共享内核）
+        model   -> 跨上下文共享的业务枚举与通用概念
+        client  -> 对外契约（DTO + AppService 接口）
+        domain  -> 领域层（聚合根/实体/值对象/领域服务/仓储接口），零技术依赖
+        application -> 场景编排，实现 client 契约
+        infrastructure -> 仓储实现（MySQL/Redis/Lua/位图）
+        adaptor -> 入口（Controller/消费者/定时任务）与出口（工厂接口）
+        bootstrap -> 唯一的 Spring Boot 启动模块，也是唯一做组件扫描与装配的地方
+    -->
+    <modules>
+        <module>reflow-common</module>
+        <module>reflow-model</module>
+        <module>reflow-client</module>
+        <module>reflow-domain</module>
+        <module>reflow-application</module>
+        <module>reflow-infrastructure</module>
+        <module>reflow-adaptor</module>
+        <module>reflow-bootstrap</module>
+    </modules>
+
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <spring-boot.version>3.5.14</spring-boot.version>
+        <mybatis-plus.version>3.5.9</mybatis-plus.version>
+        <roaringbitmap.version>1.0.6</roaringbitmap.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot BOM：统一管理所有 Spring / 测试 / H2 版本，避免版本漂移 -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- 内部模块统一版本，子模块引用时无需再写 version -->
+            <dependency>
+                <groupId>com.reflow</groupId>
+                <artifactId>reflow-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.reflow</groupId>
+                <artifactId>reflow-model</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.reflow</groupId>
+                <artifactId>reflow-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.reflow</groupId>
+                <artifactId>reflow-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.reflow</groupId>
+                <artifactId>reflow-application</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.reflow</groupId>
+                <artifactId>reflow-infrastructure</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.reflow</groupId>
+                <artifactId>reflow-adaptor</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.roaringbitmap</groupId>
+                <artifactId>RoaringBitmap</artifactId>
+                <version>${roaringbitmap.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

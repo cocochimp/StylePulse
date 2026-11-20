@@ -53,6 +53,22 @@
 
 **新增依赖前必须确认层级**：位图库、缓存库、中间件客户端一律只允许出现在 `infrastructure` 与 `adaptor`。
 
+### 2.1 模块清单（Maven 多模块，依赖由 pom 强制）
+
+| 模块 | 职责 | 允许依赖 | 禁止依赖 |
+|---|---|---|---|
+| `reflow-common` | 技术基座：`ResultDO`、`Base*`、异常、`LevelLock`、`Field`。**不含任何业务概念** | 无 | 全部 |
+| `reflow-model` | 跨上下文共享的业务枚举与常量 | common | 其他 |
+| `reflow-client` | DTO + AppService 接口 | common | model / domain / application |
+| `reflow-domain` | 聚合根、实体、值对象、Param、Result、DomainService、Repository 接口 | common、model | 其他 |
+| `reflow-application` | 场景编排、Assembler、事务边界 | common、model、client、domain | infrastructure |
+| `reflow-infrastructure` | 仓储实现（MyBatis-Plus / Redis / Lua / 位图） | common、model、domain | application、client |
+| `reflow-adaptor` | input（Controller/消费者/定时任务）+ output（工厂接口） | common、model、client、application | infrastructure |
+| `reflow-bootstrap` | 唯一启动与装配模块 | 全部 | — |
+
+> `reflow-common` 是六层之外的**共享内核**：它只装"所有层都要用、且与业务无关"的东西。
+> 不要往里加业务枚举（那是 model 的事），也不要往里加工具类堆场。
+
 ---
 
 ## 3. 分层与依赖规则
@@ -67,13 +83,13 @@ infrastructure ── 实现 domain 的 repository 接口
 
 ### 3.2 依赖矩阵（✓ 允许，✗ 禁止）
 
-| 依赖方 \ 被依赖 | domain | application | client | model | infrastructure | adaptor |
-|---|---|---|---|---|---|---|
-| **domain** | ✓ | ✗ | ✗ | ✓ | ✗ | ✗ |
-| **application** | ✓ | ✗ | ✓ | ✓ | ✗ | ✗ |
-| **client** | ✗ | ✗ | ✗ | **✗** | ✗ | ✗ |
-| **infrastructure** | ✓ | ✗ | ✗ | ✓ | ✗ | ✗ |
-| **adaptor** | ✗ | ✓(调用) | ✗ | ✓ | ✗ | ✗ |
+| 依赖方 \ 被依赖 | common | domain | application | client | model | infrastructure | adaptor |
+|---|---|---|---|---|---|---|---|
+| **domain** | ✓ | ✓ | ✗ | ✗ | ✓ | ✗ | ✗ |
+| **application** | ✓ | ✓ | ✗ | ✓ | ✓ | ✗ | ✗ |
+| **client** | ✓ | ✗ | ✗ | ✗ | **✗** | ✗ | ✗ |
+| **infrastructure** | ✓ | ✓ | ✗ | ✗ | ✓ | ✗ | ✗ |
+| **adaptor** | ✓ | ✗ | ✓(调用) | ✗ | ✓ | ✗ | ✗ |
 
 三条最容易踩的线：
 
@@ -95,6 +111,7 @@ infrastructure ── 实现 domain 的 repository 接口
 
 ```
 com.reflow
+├── common/                     # 技术基座：result / base / exception / lock / field
 ├── domain/
 │   ├── style/
 │   │   ├── model/
@@ -294,7 +311,9 @@ private Field<Integer> availableStock;
 
 ### 8.5 序列化
 
-聚合根上不参与序列化的计算方法/查找方法/判断方法，加 `@JSONField(serialize = false)`。
+聚合根只以"快照对象"（`XxxResult`）跨出领域层，聚合根本身不参与 JSON 序列化。
+如果某个场景确实要序列化聚合根，计算类/查找类/判断类方法必须显式排除
+（本工程未引入 Lombok，故不使用 `@JSONField` 之类的注解，改用"快照对象"方案）。
 
 ### 8.6 DTO 存放位置
 
@@ -314,35 +333,39 @@ private Field<Integer> availableStock;
 ### 9.1 写模式
 
 ```java
-@Slf4j
 @Service
 public class ReplenishDomainServiceImpl implements ReplenishDomainService {
 
-    @Resource
-    private StyleRepository styleRepository;
+    private static final Logger log = LoggerFactory.getLogger(ReplenishDomainServiceImpl.class);
+
+    private final ReplenishDecisionRepository replenishDecisionRepository;
+
+    public ReplenishDomainServiceImpl(ReplenishDecisionRepository replenishDecisionRepository) {
+        this.replenishDecisionRepository = replenishDecisionRepository;
+    }
 
     @Override
-    public ResultDO<Void> openDecision(OpenDecisionParam param) {
-        LevelLock lock = styleRepository.buildLock("style:decide:" + param.getStyleId());
+    public ResultDO<ReplenishDecisionResult> openDecision(OpenDecisionParam param) {
+        LevelLock lock = replenishDecisionRepository.buildLock("style:decide:" + param.getStyleId());
         try {
             if (!lock.tryLock()) {
                 return ResultDO.buildFailResult("LOCK_FAIL", "操作过于频繁，请稍后重试");
             }
 
-            StyleQuery query = new StyleQuery();
-            query.setStyleId(param.getStyleId());
-            ResultDO<StyleAggregate> queryResult = styleRepository.query(query);
-            if (!queryResult.isSuccess()) {
-                return ResultDO.buildFailResult(queryResult.getMsg());
+            // 第一层幂等：已有进行中的单就直接返回它
+            ResultDO<ReplenishDecisionAggregate> activeResult =
+                    replenishDecisionRepository.query(DecisionQuery.activeByStyle(param.getStyleId()));
+            if (!activeResult.isSuccess()) {
+                return ResultDO.buildFailResult(activeResult.getMsg());
             }
-            StyleAggregate style = queryResult.getData();
-            if (style == null) {
-                return ResultDO.buildFailResult("STYLE_NOT_FOUND", "款不存在");
+            if (activeResult.getData() != null) {
+                return ResultDO.buildSuccessResult(toResult(activeResult.getData(), true));
             }
 
-            style.openDecision(param);
-
-            styleRepository.save(style);
+            // 轮次必须在锁内取，否则两路并发会拿到同一个 round
+            param.setRound(replenishDecisionRepository.nextRound(param.getStyleId()).getData());
+            ReplenishDecisionAggregate decision = ReplenishDecisionAggregate.open(param);
+            ResultDO<Void> saveResult = replenishDecisionRepository.save(decision);
 
         } catch (BizException e) {
             log.error("开决策单业务异常, param: {}", param, e);
@@ -353,7 +376,6 @@ public class ReplenishDomainServiceImpl implements ReplenishDomainService {
         } finally {
             lock.unlock();
         }
-        return ResultDO.buildSuccessResult(null);
     }
 }
 ```
@@ -361,8 +383,6 @@ public class ReplenishDomainServiceImpl implements ReplenishDomainService {
 ### 9.2 规则+计算模式
 
 ```java
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class ReplenishRuleAggregate extends BaseAggregate<Long> {
 
     private ReplenishRuleEntity ruleEntity;
@@ -380,18 +400,23 @@ public class ReplenishRuleAggregate extends BaseAggregate<Long> {
 ```
 
 ```java
-@Slf4j
 @Service
 public class ReplenishCalculateDomainServiceImpl implements ReplenishCalculateDomainService {
 
-    @Resource
-    private ReplenishRuleRepository replenishRuleRepository;
+    private static final Logger log = LoggerFactory.getLogger(ReplenishCalculateDomainServiceImpl.class);
+
+    private final ReplenishRuleRepository replenishRuleRepository;
+
+    public ReplenishCalculateDomainServiceImpl(ReplenishRuleRepository replenishRuleRepository) {
+        this.replenishRuleRepository = replenishRuleRepository;
+    }
 
     @Override
     public ResultDO<CalculateQtyResult> calculateQty(CalculateQtyParam param) {
         try {
+            // 仓储实现内部走倒排索引 + 位图交集，返回的已是精确命中的候选集
             ResultDO<List<ReplenishRuleAggregate>> ruleResult =
-                replenishRuleRepository.queryEnabledRules(param.getCategoryId());
+                replenishRuleRepository.queryMatchedRules(param.getMatchStyleParam());
             if (!ruleResult.isSuccess()) {
                 return ResultDO.buildFailResult(ruleResult.getMsg());
             }
@@ -441,9 +466,10 @@ param.setSizeCurveProvider(styleId -> sizeCurveAdaptor.querySizeCurve(styleId));
 ### 9.4 纯计算模式
 
 ```java
-@Slf4j
 @Service
 public class SizeAllocationDomainServiceImpl implements SizeAllocationDomainService {
+
+    private static final Logger log = LoggerFactory.getLogger(SizeAllocationDomainServiceImpl.class);
 
     @Override
     public ResultDO<SizeAllocationResult> allocate(SizeAllocationParam param) {

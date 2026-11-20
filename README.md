@@ -2,6 +2,10 @@
 
 > 一个**按 DDD 六层架构落地的完整 Java 工程**：从销量事件进来，到生产指令下发给工厂，中间四个技术难点（倒排索引、滑动窗口、三层幂等、Lua 原子预占）全部有可运行代码和测试。
 
+![StylePulse 架构总览：业务链路 → 限界上下文 → DDD 六层 → 技术底座](docs/assets/architecture-4x3.png)
+
+<p align="center"><sub>业务链路 → 限界上下文 → DDD 六层 → 技术底座；可交互版本见 <a href="docs/architecture.html">docs/architecture.html</a></sub></p>
+
 业务方案见 [docs/01-business-case.md](docs/01-business-case.md)，技术设计见 [docs/02-technical-design.md](docs/02-technical-design.md)，代码规范见 [AGENTS.md](AGENTS.md)，面试话术见 [docs/03-interview-playbook.md](docs/03-interview-playbook.md)。
 
 ---
@@ -101,25 +105,9 @@ redis-cli HGETALL "cap:1:1:$(date -v+7d +%Y-%m-%d)"
 
 ## 3. 架构总览
 
-### 3.1 模块依赖（Maven 强制约束）
+整体视图见文首配图（[可交互版本](docs/architecture.html)），这一节只讲模块清单和一次调用的穿透路径。
 
-```mermaid
-flowchart TD
-    C[stylepulse-common<br/>技术基座] --> M[stylepulse-model<br/>共享枚举]
-    C --> CL[stylepulse-client<br/>对外契约]
-    M --> D[stylepulse-domain<br/>领域层]
-    C --> D
-    CL --> A[stylepulse-application<br/>场景编排]
-    D --> A
-    M --> A
-    D --> I[stylepulse-infrastructure<br/>仓储实现]
-    M --> I
-    CL --> AD[stylepulse-adaptor<br/>入口/出口适配]
-    A --> AD
-    A --> B[stylepulse-start<br/>装配与启动]
-    I --> B
-    AD --> B
-```
+### 3.1 模块职责（Maven 强制约束）
 
 | 模块 | 目录 | 职责 | 允许依赖 |
 |---|---|---|---|

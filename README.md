@@ -3,7 +3,7 @@
 
 > 从销量事件进来，到生产指令下发给工厂，中间四个技术难点（倒排索引、滑动窗口、三层幂等、Lua 原子预占）全部有可运行代码和测试。
 
-![StylePulse 架构总览：业务链路 → 限界上下文 → DDD 六层 → 技术底座](docs/assets/architecture-4x3.png)
+![StylePulse 架构总览：业务链路 → 限界上下文 → DDD 六层 → 技术底座](docs/assets/architecture-overview-4x3.png)
 
 <p align="center"><sub>业务链路 → 限界上下文 → DDD 六层 → 技术底座；可交互版本：<code>docs/architecture.html</code>（本地浏览器打开）</sub></p>
 
